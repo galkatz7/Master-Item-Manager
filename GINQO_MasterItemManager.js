@@ -477,36 +477,36 @@ function ($, qlik, mainModalWindow, helpModalWindow, dimModalWindow, dimModalCon
 				const formatType = getValueByKey(cells, "%MI%MeasureFormatType", "qText");
 			
 				// Check if number format properties are provided
-				if (formatType.length > 0) {
-			
-					const formatFmt = getValueByKey(cells, "%MI%MeasureFormatFmt", "qText");
-					const formatDec = getValueByKey(cells, "%MI%MeasureFormatDec", "qText");
-					const formatThou = getValueByKey(cells, "%MI%MeasureFormatThou", "qText");
+				if (formatType && formatType.length > 0) {
+        const formatFmt = getValueByKey(cells, "%MI%MeasureFormatFmt", "qText");
+        const formatDec = getValueByKey(cells, "%MI%MeasureFormatDec", "qText");
+        const formatThou = getValueByKey(cells, "%MI%MeasureFormatThou", "qText");
 
-					var formatNDec;
-					if (formatType == 'U') {
-						formatNDec = 10;
-					} else {
-						formatNDec = 2;
-					}
-					const formatUseThou = 0;  // always 0, parseInt(getValueByKey(cells, "%MI%MeasureFormatUseThou", "qText")); 
+    // Logic: 'U' (Unknown) gets 10 decimals, others (Fixed, Money, etc.) get 2
+    let formatNDec = (formatType === 'U') ? 10 : 2;
 
-					const numberFormat = {
-						qnDec: formatNDec,
-						qUseThou: formatUseThou,
-						qFmt: formatFmt,
-						qDec: formatDec,
-						qType: formatType,
-						qThou: formatThou
-					}
-			
-					// Assign the number format to the measure properties
-					properties.qMeasure.qNumFormat = numberFormat;
-			
-				} else {
-					// If the number format is not provided, use existing values
-					properties.qMeasure.qNumFormat = existingNumber;
-				}
+    properties.qMeasure.qNumFormat = {
+        qType: formatType,
+        qnDec: formatNDec,
+        qUseThou: 0,
+        qFmt: formatFmt || '',
+        qDec: formatDec || '',
+        qThou: formatThou || ''
+    };
+
+    // FIX: Explicitly disable Auto Format so Qlik uses the object above
+    properties.qMeasure.qIsAutoFormat = false;
+
+} else {
+    // If Excel cell is blank, keep the existing Master Item format
+    if (existingNumber && Object.keys(existingNumber).length > 0) {
+        properties.qMeasure.qNumFormat = existingNumber;
+        properties.qMeasure.qIsAutoFormat = false;
+    } else {
+        // Fallback to Auto only if no format exists at all
+        properties.qMeasure.qIsAutoFormat = true;
+    }
+}
 			
 				// Determine the action (create or update) and perform the appropriate action
 				if (actionType === 'UPDATE') {
